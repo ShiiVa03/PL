@@ -1,6 +1,6 @@
 import re
 
-from sys import version_info
+from sys import version_info, argv
 from itertools import islice
 from typing import Optional, Tuple, Union, List, Callable
 
@@ -8,6 +8,8 @@ from typing import Optional, Tuple, Union, List, Callable
 if 3 > version_info.major or (3 == version_info.major and 6 >= version_info.minor):
     raise Exception("Python must be >=3.6")
 
+if (len(argv) != 2):
+    raise Exception("Script requires only one aditional argument")
 
 agg_funcs = {
     'sum': lambda x: str(sum(map(int, x))),
@@ -16,7 +18,7 @@ agg_funcs = {
 }
 
 
-file = open("file4_sum.csv", encoding='utf8')
+file = open(argv[1], encoding='utf8')
 
 header = file.readline()
 
@@ -25,9 +27,7 @@ agg_funcs_exp = '|'.join(agg_funcs.keys())
 mode_exp = f'(?:::({agg_funcs_exp}))'
 list_exp = fr'(?:{{(\d+)(?:,(\d+))?}}{mode_exp}?)'
 
-item_header_exp = fr'(?:([^,{{}}]+){list_exp}?)'
-
-col_exp = fr'(?:{item_header_exp}?(?:,|\n))'
+col_exp = fr'(?:(?:(".*?"|[^,"{{}}]+){list_exp}?)?(?:,|\n))'
 
 #header_exp_check = fr'^(({item_header_exp})?,)*({item_header_exp})?\n'
 header_exp_check = fr'{col_exp}+'
@@ -52,6 +52,8 @@ for col, min_v, max_v, mode in re.findall(col_exp, header):
         list_count -= 1
 
     else:
+        col = col.strip('"')
+        
         if col in columns:
             raise Exception(f"Column `{col}` is repeated")
 
@@ -83,7 +85,7 @@ n_columns = sum(v[1] if v else 1 for v in columns.values())
 
 json_output = []
 
-item_row_exp = r'([^,]*)(?:,|$)'
+item_row_exp = r'(".*?"|[^,]*)(?:,|$)'
 
 row_exp_check = fr'^(?:{item_row_exp}){{{n_columns}}}'
 print(row_exp_check)
@@ -95,7 +97,7 @@ row_re_check = re.compile(row_exp_check)
 
 
 for idx, _line in enumerate(file):
-    line = _line.rstrip()
+    line = _line.strip('"\n')
 
     if not line: # Blank line
         continue
