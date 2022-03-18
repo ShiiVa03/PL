@@ -8,13 +8,13 @@ from typing import Optional, Tuple, Union, List, Callable
 if 3 > version_info.major or (3 == version_info.major and 6 >= version_info.minor):
     raise Exception("Python must be >=3.6")
 
-if (len(argv) != 2):
-    raise Exception("Script requires only one aditional argument")
+if (len(argv) != 3):
+    raise Exception("Script requires `source` file and `destination` file as parameters")
 
 agg_funcs = {
-    'sum': lambda x: str(sum(map(int, x))),
-    'median': lambda x: str(sum(map(int, x))/len(x)),
-    'count': lambda x: str(len(x)), 
+    'sum': sum,
+    'median': lambda x: sum(x)/len(x),
+    'count': len 
 }
 
 
@@ -23,13 +23,9 @@ file = open(argv[1], encoding='utf8')
 header = file.readline()
 
 agg_funcs_exp = '|'.join(agg_funcs.keys())
-
 mode_exp = f'(?:::({agg_funcs_exp}))'
 list_exp = fr'(?:{{(\d+)(?:,(\d+))?}}{mode_exp}?)'
-
 col_exp = fr'(?:(?:(".*?"|[^,"{{}}]+){list_exp}?)?(?:,|\n))'
-
-#header_exp_check = fr'^(({item_header_exp})?,)*({item_header_exp})?\n'
 header_exp_check = fr'{col_exp}+'
 
 if not re.fullmatch(header_exp_check, header):
@@ -39,13 +35,12 @@ if not re.fullmatch(header_exp_check, header):
 '''
 Check if headers aren't blank except those which reference a list slot (blank obligatory)
 '''
-print(col_exp)
 
 columns = {} # Dict is ordered since Python 3.6
 list_count = 0
 
 for col, min_v, max_v, mode in re.findall(col_exp, header):
-    print(col)
+
     if not col:
         if list_count == 0:
             raise Exception("Blank header isn't allowed")
@@ -74,10 +69,6 @@ for col, min_v, max_v, mode in re.findall(col_exp, header):
         else:
             columns[col] = None
             
-        
-        
-
-print(columns)
 
 n_columns = sum(v[1] if v else 1 for v in columns.values())
 
@@ -86,9 +77,7 @@ n_columns = sum(v[1] if v else 1 for v in columns.values())
 json_output = []
 
 item_row_exp = r'(".*?"|[^,]*)(?:,|$)'
-
 row_exp_check = fr'^(?:{item_row_exp}){{{n_columns}}}'
-print(row_exp_check)
 
 item_row_re = re.compile(item_row_exp)
 row_re_check = re.compile(row_exp_check)
@@ -97,7 +86,7 @@ row_re_check = re.compile(row_exp_check)
 
 
 for idx, _line in enumerate(file):
-    line = _line.strip('"\n')
+    line = _line.rstrip('\n')
 
     if not line: # Blank line
         continue
@@ -105,15 +94,17 @@ for idx, _line in enumerate(file):
     if not row_re_check.fullmatch(line):
         raise Exception(f"Line {idx + 1} doesn\'t follow the correct pattern")
 
-    results = iter(item_row_re.findall(line))
-    print(item_row_re.findall(line))
+    results = (item.strip('"') for item in item_row_re.findall(line))
     
     def get_pair(col: str, opt: Optional[Tuple[int, int, Tuple[str, Callable[[List[str]], str]]]]) -> Union[str, List[str]]:    
         if opt:
             
             min_v, max_v, mode = opt
-            
-            r = [x for x in islice(results, max_v) if x]
+
+            try:
+                r = [int(x) for x in islice(results, max_v) if x]
+            except ValueError:
+                raise Exception(f"Line {idx + 1} contains a non-integer value inside a list")
 
             if len(r) < min_v:
                 raise Exception(f"Line {idx + 1} contains a list without enough values")
@@ -135,5 +126,28 @@ for idx, _line in enumerate(file):
     values = dict(get_pair(col, opt) for col, opt in columns.items())
     json_output.append(values)
 
-print(json_output)
+
+
+with open(argv[2], 'w') as f:
+    buffer = []
+    
+    f.write('[\n')
+
+    for row in json_output:
+        row_buffer = []
+
+        result = "\t{\n"
+        
+        for key, value in row.items():
+            row_buffer.append(f'\t\t"{key}": ' + (str(value) if isinstance(value, list) else f'"{value}"'))
+
+        result += ',\n'.join(row_buffer) + "\n\t}"
+
+        buffer.append(result)
+
+    f.write(',\n'.join(buffer))
+
+    f.write('\n]\n')
+
+
 
