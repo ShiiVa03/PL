@@ -2,7 +2,6 @@ import re
 
 from sys import version_info, argv
 from itertools import islice
-from typing import Optional, Tuple, Union, List, Callable, Dict
 
 
 if 3 > version_info.major or (3 == version_info.major and 6 >= version_info.minor):
