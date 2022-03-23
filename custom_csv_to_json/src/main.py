@@ -27,6 +27,7 @@ list_exp = fr'(?:{{(\d+)(?:,(\d+))?}}{mode_exp}?)'
 col_exp = fr'(?:(?:(".*?"|[^,"{{}}]+){list_exp}?)?(?:,|\n))'
 header_exp_check = fr'{col_exp}+'
 
+
 if not re.fullmatch(header_exp_check, header):
     raise Exception("Header isn't valid")
 
@@ -138,7 +139,7 @@ with open(argv[2], 'w') as f:
         result = "\t{\n"
         
         for key, value in row.items():
-            row_buffer.append(f'\t\t"{key}": ' + (str(value) if isinstance(value, list) else f'"{value}"'))
+            row_buffer.append(f'\t\t"{key}": ' + (f'"{value}"' if isinstance(value, str) else str(value)))
 
         result += ',\n'.join(row_buffer) + "\n\t}"
 
