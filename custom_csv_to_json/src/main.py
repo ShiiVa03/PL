@@ -12,7 +12,8 @@ if (len(argv) != 3):
 
 agg_funcs = {
     'sum': sum,
-    'median': lambda x: sum(x)/len(x),
+    'mean': lambda x: sum(x)/len(x),
+    'media': lambda x: sum(x)/len(x),
     'count': len
 }
 
