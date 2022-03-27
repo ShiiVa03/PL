@@ -22,8 +22,8 @@ file = open(argv[1], encoding='utf8')
 
 header = file.readline()
 
-agg_funcs_exp = '|'.join(agg_funcs.keys())
-mode_exp = f'(?:::({agg_funcs_exp}))'
+agg_funcs_exp = r'(?:' + r'|'.join(agg_funcs.keys()) + r')'
+mode_exp = fr'(?:::({agg_funcs_exp}))'
 list_exp = fr'(?:{{(\d+)(?:,(\d+))?}}{mode_exp}?)'
 col_exp = fr'(?:(?:(".*?"|[^,"{{}}]+){list_exp}?)?(?:,|\n))'
 header_exp_check = fr'{col_exp}+'
