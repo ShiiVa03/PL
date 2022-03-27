@@ -77,8 +77,8 @@ n_columns = sum(v[1] if v else 1 for v in columns.values())
 
 json_output = []
 
-item_row_exp = r'(".*?"|[^,]*)(?:,|$)'
-row_exp_check = fr'^(?:{item_row_exp}){{{n_columns}}}'
+item_row_exp = r'(?:(".*?"|[^,]*)(?:,|$))'
+row_exp_check = fr'^{item_row_exp}{{{n_columns}}}'
 
 item_row_re = re.compile(item_row_exp)
 row_re_check = re.compile(row_exp_check)
