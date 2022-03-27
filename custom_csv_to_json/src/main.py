@@ -4,7 +4,7 @@ from sys import version_info, argv
 from itertools import islice
 
 
-if 3 > version_info.major or (3 == version_info.major and 6 >= version_info.minor):
+if 3 > version_info.major or (3 == version_info.major and 6 > version_info.minor):
     raise Exception("Python must be >=3.6")
 
 if (len(argv) != 3):
