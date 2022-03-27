@@ -63,7 +63,7 @@ for col, min_v, max_v, mode in re.findall(col_exp, header):
                 raise Exception(f"Column `{col}` has invalid mode {mode}")
             
             if opt[1] == 0 or opt[0] > opt[1]:
-                raise Exception(f"Column `{col}` must has list with invalid size(s)")
+                raise Exception(f"Column `{col}` must have list with valid size(s)")
 
             list_count = opt[1]
             columns[col] = opt
