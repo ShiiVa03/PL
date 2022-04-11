@@ -1,0 +1,4 @@
+--lexer
+literals = "a"
+ignore = "ola"
+tokens = ['boas',"ola"]
