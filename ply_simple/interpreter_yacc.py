@@ -3,39 +3,50 @@ import ply.yacc as yacc
 import sys
 
 
-def p_Inicio(p):
-    "Inicio : Lexer"
+def p_begin(p):
+    "begin : lexer"
 
-def p_Lexer(p):
-    "Lexer : BEGINL Declaracoes"
+def p_lexer(p):
+    "lexer : BEGINL declarations"
 
-def p_declaracoes(p):
-    "Declaracoes : Declaracoes declaracao"
+def p_declarations(p):
+    "declarations : declarations declaration"
 
-def p_declaracoesstop(p):
-    "Declaracoes : declaracao"
+def p_declarationsstop(p):
+    "declarations : declaration"
 
-def p_declaracao(p):
-    "declaracao : Types"
+def p_declaration(p):
+    "declaration : types commentlex"
 
+def p_commentlexempty(p):
+    "commentlex : "
+
+def p_commentlex(p):
+    "commentlex : COMMENT"
+    
 def p_typesliteral(p):
-    "Types : LITERAL '=' STR"
+    "types :  LITERAL '=' STR"
     p.parser.string += p[1] + p[2] + p[3] + "\n"
 
 def p_typesignores(p):
-    "Types : IGNORE '=' STR"
+    "types :  IGNORE '=' STR"
     p.parser.string += p[1] + p[2] + p[3] + "\n"
     
 def p_typestokens(p):
-    "Types : TOKENS '=' '[' Conteudo ']'"
+    "types :  TOKENS '=' '[' content ']'"
     p.parser.string += p[1] + p[2] + p[3] + p[4] + p[5] +"\n"
+
+def p_typesreturn(p):
+    "types : REGEXP RETURN"
+    exp = "r'" + p[1] +"'"+ p[2]+ "\n"
+    p.parser.string += exp
     
-def p_conteudoelem(p):
-    "Conteudo : elem"
+def p_contentelem(p):
+    "content : elem"
     p[0] = p[1]
 
-def p_conteudoelems(p):
-    "Conteudo : Conteudo ',' elem"
+def p_contentelems(p):
+    "content : content ',' elem"
     p[0] = p[1] + p[2] + p[3]
 
 def p_elem(p):
@@ -45,7 +56,7 @@ def p_elem(p):
 def p_elemSTR(p):
     "elem : STR"
     p[0] = p[1]
-    
+
 
 parser = yacc.yacc()
 parser.string = "import ply.yacc as yacc\nimport ply.lex as lex\n"
