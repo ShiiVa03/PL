@@ -1,4 +1,9 @@
---lexer
-literals = "a"
-ignore = "ola"
-tokens = ['boas',"ola"]
+%%lexer
+%literals = "a"
+%ignore = "ola" 
+
+/[a-zA-Z][a-zA-Z0-9]*/ return ('VAR',float(t.value))
+/(d+)/ error(f"Illegal character '{t.value[0]}', [{t.lexer.lineno}]", t.value)
+%tokens = ['boas',"ola"]
+lexer = lex.lex()
+%%yacc
