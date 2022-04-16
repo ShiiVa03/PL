@@ -1,7 +1,8 @@
 import ply.lex as lex
 import re
 
-tokens = ["BEGINL","STR","LITERAL","IGNORE","TOKENS","PAL","COMMENT","RETURN","REGEXP","TVALUE","ERROR","FSTR", "ID","LBUILD","BEGINY"]
+tokens = ["BEGINL","STR","LITERAL","IGNORE","TOKENS","PAL","COMMENT","RETURN","REGEXP","TVALUE"
+          ,"ERROR","FSTR", "ID","LBUILD","BEGINY","PRECEDENCE", "PRETYPES"]
 literals = ["%","=","[","]",",","(",")"]
 
 
@@ -34,6 +35,15 @@ def t_IGNORE(t):
 def t_TOKENS(t):
     r'%tokens'
     t.value = t.value[1:]
+    return t
+
+def t_PRECEDENCE(t):
+    r'%precedence'
+    t.value = t.value[1:]
+    return t
+
+def t_PRETYPES(t):
+    r'\'(left|right|nonassoc)\''
     return t
 
 def t_PAL(t):

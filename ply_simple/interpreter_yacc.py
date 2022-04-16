@@ -8,10 +8,6 @@ def p_begin(p):
 
 def p_lexer(p):
     "lexer : BEGINL declarations"
-    
-def p_yacc(p):
-    "yacc : BEGINY"
-    print("YACC")
 
 def p_declarations(p):
     "declarations : declarations declaration"
@@ -61,13 +57,14 @@ def construct_error_func(p):
 
 def p_typesbuild(p):
     "types : ID '=' LBUILD "
-    p.parser.string += p[1] + p[2] + p[3] 
+    p.parser.string += p[1] + p[2] + p[3] + "\n"
     
 def check_if_present(p,str):
     tok = str[1:-1]
-    if str[1:-1] in p.parser.tokens:
+    if tok in p.parser.tokens:
         error("Token already in list!", p)
-    p.parser.tokens.append(tok)
+    else:
+        p.parser.tokens.append(tok)
     
 def p_contentelem(p):
     "content : elem"
@@ -90,7 +87,49 @@ def p_elemSTR(p):
 def p_elemFormat(p):
     "elem : FSTR"
     p[0] = p[1]
+
+def p_yacc(p):
+    "yacc : BEGINY yaccdecs"
     
+def p_yaccdecs(p):
+    "yaccdecs : yaccdecs yaccdec"
+
+def p_yaccdecconly(p):
+    "yaccdecs : yaccdec"
+    
+def p_yaccdec(p):
+    "yaccdec : yacctype"
+
+def p_yacctype(p):
+    "yacctype : PRECEDENCE '=' '[' tuples ']'"
+    p.parser.string += p[1] + p[2] + "(\n\t" + p[4] + "\n\t)\n"
+
+def p_tuples(p):
+    "tuples : tuples ',' tuple"
+    p[0] = p[1] + p[2] + "\n\t" + p[3]
+
+def p_tuplesone(p):
+    "tuples : tuple"
+    p[0] = p[1] 
+    
+def p_tuple(p):
+    "tuple : '(' PRETYPES ',' tupelems ')'"
+    p[0] = p[1] + p[2] + p[3] + p[4] + p[5]
+
+def p_tupelem(p):
+    "tupelems : elem"
+    if p[1][1:-1] not in p.parser.tokens:
+        error("Token not in previous defined tokens!!!",p)
+    else:
+        p[0] = p[1]
+
+def p_tupeelems(p):
+    "tupelems : tupelems ',' elem"
+    if p[3][1:-1] not in p.parser.tokens:
+        error("Token not in previous defined tokens!!!",p)
+    else:
+        p[0] = p[1]
+
 def error(error,p):
     print(error)
     p.parser.success = False
@@ -120,9 +159,3 @@ if parser.success:
 
 else:
     print("Compilation failed!")
-
-
-
-
-
-
