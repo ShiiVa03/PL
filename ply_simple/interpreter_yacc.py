@@ -1,10 +1,8 @@
 from interpreter_lex import tokens,literals
 import ply.yacc as yacc
-import sys
-
 
 def p_begin(p):
-    "begin : lexer yacc"
+    "begin : lexer yacc end"
 
 def p_lexer(p):
     "lexer : BEGINL declarations"
@@ -37,22 +35,32 @@ def p_typestokens(p):
     p.parser.string += p[1] + p[2] + p[3] + p[4] + p[5] +"\n"
 
 def p_typesreturn(p):
-    "types : REGEXP RETURN '(' elem ',' TVALUE ')'"
+    "types : REGEXP RETURN '(' elem ',' code ')'"
     exp = construct_function(p)
     p.parser.string += exp
     
 def construct_function(p):
     func_name = p[4][1:-1]
-    exp = f"def t_{func_name}(t):\n\tr'{p[1]}'\n\tt.value = {p[6]}\n\treturn t\n"
+    p[6] = p[6].replace('\n', '\n\t')
+    exp = f"def t_{func_name}(t):\n\tr'{p[1]}'\n\t{p[6]}\n\treturn t\n\n"
     return exp
 
+def p_code(p):
+    "code : CODE"
+    p[0] = p[1]
+
+def p_code_empty(p):
+    "code : "
+    p[0] = ""
+
 def p_typeserror(p):
-    "types : REGEXP ERROR '(' elem ',' TVALUE ')' "
+    "types : REGEXP ERROR '(' elem ',' code ')' "
     exp = construct_error_func(p)
     p.parser.string += exp
     
 def construct_error_func(p):
-    exp = f"def p_error(t):\n\tprint(f{p[4]})\n"
+    p[6] = p[6].replace('\n', '\n\t')
+    exp = f"def t_error(t):\n\tprint(f{p[4]})\n\t{p[6]}\n\n"
     return exp
 
 def p_typesbuild(p):
@@ -108,32 +116,50 @@ def p_yacctypecomment(p):
     "yacctype : COMMENT"
 
 
+def p_end(p):
+    "end : END"
+    p.parser.string += p[1]
+    
+
+
 #TODO MAKE ATRIBS RECEIVE MORE THAT ELEM
 def p_yacctypeatribs(p):
     "yacctype : ID '=' elem "
-    p.parser.atribs[p[1]] = p[3]    
+    p.parser.string += p[1] + " = " + p[3][1:-1] + "\n" 
+    p.parser.atribs.append(p[1]) 
 
 def p_yacctypegrammar(p):
-    "yacctype : ID ':' gramcontents '{' '}' '-' ID"
+    "yacctype : ID ':' gramcontents code '-' ID"
     p.parser.string += construct_grammar_func(p)
 
 def construct_grammar_func(p):
-    func_name = p[7]
-    exp = f"def p_{func_name}(p):\n\t\"{p[1]} ':' {p[3]}\"\n\n"
+    func_name = p[6]
+    str_globals = '\n\t'.join("global " + attr for attr in p.parser.atribs)
+    exp = f'''
+def p_{func_name}(p):
+\t"{p[1]} : {p[3]}"
+\t{str_globals}
+\t{p[4]}\n
+'''
     return exp
     
 def p_gramcontentsonly(p):
     "gramcontents : gramcontent"
+    p[0] = p[1]
     
     
 def p_gramcontents(p):
     "gramcontents : gramcontents gramcontent"
+    p[0] = p[1] + ' ' + p[2]
+    
     
 def p_gramcontent(p):
     "gramcontent : LIT"
+    p[0] = p[1]
 
 def p_gramcontentw(p):
     "gramcontent : ID"
+    p[0] = p[1]
 
 
 def p_tuples(p):
@@ -174,12 +200,12 @@ def p_error(p):
 
 parser = yacc.yacc()
 
-f = open("test.txt","r")
+f = open("test.txt","r", encoding='utf8')
 
 parser.string = "import ply.yacc as yacc\nimport ply.lex as lex\n"
 parser.tokens = []
 parser.success = True
-parser.atribs = {}
+parser.atribs = []
 
 
 content = f.read()
@@ -189,7 +215,7 @@ print(parser.atribs)
 
 if parser.success:
     print("Compilation successful!")
-    fout = open("out.py","w")
+    fout = open("out.py","w", encoding='utf8')
     fout.write(parser.string)
     print(parser.string,end="")
 

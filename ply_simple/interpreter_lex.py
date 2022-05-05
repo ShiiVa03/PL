@@ -1,10 +1,15 @@
 import ply.lex as lex
 import re
 
-tokens = ["BEGINL","STR","LITERAL","IGNORE","TOKENS","PAL","COMMENT","RETURN","REGEXP","TVALUE"
-          ,"ERROR","FSTR", "ID","LBUILD","BEGINY","PRECEDENCE", "PRETYPES","LIT"]
+tokens = ["BEGINL","STR","LITERAL","IGNORE","TOKENS","PAL","COMMENT","RETURN","REGEXP",
+          "ERROR","FSTR", "ID","LBUILD","BEGINY","PRECEDENCE", "PRETYPES","LIT","CODE", "END"]
 literals = ["%","=","[","]",",","(",")",":","{","}","-"]
 
+
+def t_CODE(t):
+    r'\{(.|\s)*?(?<!\\)}'
+    t.value = t.value[1:-1].strip(' ').replace(r'\}', '}')
+    return t
 
 def t_BEGINL(t):
     r'%%lexer'
@@ -12,7 +17,12 @@ def t_BEGINL(t):
 
 def t_BEGINY(t):
     r'%%yacc'
-    return t    
+    return t
+
+def t_END(t):
+    r'%%\s*(.|\s)*'
+    t.value = t.value.lstrip('% \n')
+    return t
 
 def t_LITERAL(t):
     r'%literals'
@@ -40,10 +50,6 @@ def t_RETURN(t):
 
 def t_ERROR(t):
     r'error'
-    return t
-
-def t_TVALUE(t):
-    r'(float|int)?\(t.value\)|t.value'
     return t
 
 def t_PRETYPES(t):
@@ -84,7 +90,11 @@ def t_ID(t):
     r'[a-zA-Z]([a-zA-Z_]|\d)*'
     return t
 
-t_ignore = " \t\n"
+def t_newline(t):
+    r'\n+'
+    t.lexer.lineno += len(t.value)
+
+t_ignore = " \t"
 
 def t_error(t):
     print("Illegal character", t.value[0])
