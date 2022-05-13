@@ -2,9 +2,8 @@ import ply.lex as lex
 import re
 
 tokens = ["BEGINL","STR","LITERAL","IGNORE","TOKENS","PAL","COMMENT","RETURN","REGEXP",
-          "ERROR","FSTR", "ID","LBUILD","BEGINY","PRECEDENCE", "PRETYPES","LIT","CODE", "END"]
+          "ERROR","FSTR", "ID","LBUILD","BEGINY","PRECEDENCE", "PRETYPES","LIT","CODE", "STATES", "STATESTYPES", "END"]
 literals = ["%","=","[","]",",","(",")",":","{","}","-"]
-
 
 def t_CODE(t):
     r'\{(.|\s)*?(?<!\\)}'
@@ -54,6 +53,14 @@ def t_ERROR(t):
 
 def t_PRETYPES(t):
     r'\'(left|right|nonassoc)\''
+    return t
+
+def t_STATES(t):
+    r'%states'
+    return t
+
+def t_STATESTYPES(t):
+    r'\'(exclusive|inclusive)\''
     return t
 
 def t_LBUILD(t):

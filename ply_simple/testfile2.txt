@@ -1,0 +1,53 @@
+%%lexer
+%tokens = ["ID","INT","PRINT","READ","DUMP"]
+%literals = "+-*/()="
+/print|PRINT/ return("PRINT",{})
+/read|READ/ return("READ",{})
+/dump|DUMP/ return("DUMP",{})
+/[a-zA-Z_]\w*/ return("ID",{})
+/\d+/ return("INT",{t.value = int(t.value)})
+error("illegal character",{t.lexer.skip(1)})
+%ignore = " \n\t\r"
+
+lexer = lex.lex()
+
+%%yacc
+ids = "{}" 
+#comment
+
+prog : comandos {} - prog
+comandos : {} - comandosvazio
+comandos : comandos comando {} - co
+comando : ID '=' exp {ids[p[1]] = p[3]} - comando_atrib
+comando : PRINT exp {print(p[2])} - comando_print
+comando : READ ID {
+	r = int(input())
+	ids[p[2]] = r} - comando_read
+comando : DUMP {print(ids)} - comando_dump
+exp : aexp {p[0] = p[1]} - exp
+aexp : aexp '+' termo {p[0] = p[1] + p[3]} - aexp_add
+aexp : aexp '-' termo {p[0] = p[1] - p[3]} - aexp_minus
+aexp : termo {p[0] = p[1]} - aexp_termo
+termo : termo '*' fator {p[0] = p[1] * p[3]} - termo_mul
+termo : termo '/' fator {p[0] = p[1] / p[3]} - termo_div
+termo : fator {p[0] = p[1]} - termo_fator
+fator : ID {
+	if p[1] in ids:
+  	p[0] = ids[p[1]]
+  else:
+  	print("Variavél nao definida. Vai ser inicializada a zero")
+  	p[0] = 0
+} - fator_ID
+fator : INT {p[0] = p[1]} - fator_INT
+fator : '(' aexp ')' {p[0] = p[2]} - fator_par
+
+%%
+
+parser = yacc.yacc()
+
+
+import sys 
+
+for line in sys.stdin:
+	parser.parse(line)
+

@@ -1,0 +1,40 @@
+%%lexer
+%literals = "+*-/"
+%ignore = "ola" # comment
+/[a-zA-Z][a-zA-Z0-9]*/ return ("VAR",{t.value = float(t.value)})
+/(\d+)/ 	 return("NUMBER", {float(t.value)})
+error(f"Illegal character '{t.value[0]}', [{t.lexer.lineno}]", {t.lexer.skip(1)})
+
+%states = (("comment",'exclusive'),("state",'inclusive'))
+%tokens = [f'VAR',f"NUMBER"]
+
+lexer = lex.lex()
+
+
+%%yacc
+ts = "{}"
+x = "[]"
+%precedence = [('left',"VAR"),
+	('right',f"NUMBER")] ##comment
+#comment
+
+stat : NUMBER '+' stat {print(p[1], p[3])} - statfirst1
+stat : NUMBER '-' stat {print(p[1], p[3])} - statfirst2
+stat : NUMBER '/' stat {print(p[1], p[3])} - statfirst3
+stat : NUMBER '*' stat {print(p[1], p[3])} - statfirst4
+stat : NUMBER {print(p[1])} -    stat
+
+%%
+
+def p_error(p):
+	if p:
+		print("Syntax error at token", p.type)
+	else:
+		print("Syntax error at EOF")
+	exit()
+	
+def getval(n):
+	if n not in ts: print(f"Undefined name ’{n}’")
+	return ts.get(n,0)
+y=yacc.yacc()
+y.parse("3+4*7")
