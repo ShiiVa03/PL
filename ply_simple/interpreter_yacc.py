@@ -24,11 +24,20 @@ def p_commentlex(p):
     
 def p_typesliteral(p):
     "types :  LITERAL '=' STR"
-    p.parser.string += p[1] + p[2] + p[3] + "\n"
+    exp = construct_literals(p[3])
+    p.parser.string += p[1] + p[2] + exp + "\n"
+    
+def construct_literals(lits):
+    result = "["
+    lits = lits[1:-1]
+    for s in lits:
+        result += f'"{s}",'
+    result += "]"
+    return result 
 
 def p_typesignores(p):
     "types :  IGNORE '=' STR"
-    p.parser.string += p[1] + p[2] + p[3] + "\n"
+    p.parser.string += "t_" + p[1] + p[2] + p[3] + "\n"
     
 def p_typestokens(p):
     "types :  TOKENS '=' '[' content ']'"
@@ -41,9 +50,11 @@ def p_typesreturn(p):
     
 def construct_function(p):
     func_name = p[4][1:-1]
-    p[6] = p[6].replace('\n', '\n\t')
-    exp = f"def t_{func_name}(t):\n\tr'{p[1]}'\n\t{p[6]}\n\treturn t\n\n"
-    return exp
+    p[6] = p[6].replace('\n', '\n  ').replace('\t', '  ')
+    exp = f"def t_{func_name}(t):\n  r'{p[1]}'\n" 
+    code = f"  {p[6]}\n  " 
+    ret = "return t\n\n"
+    return exp + "  " + ret if not p[6] else exp + code + ret
 
 def p_code(p):
     "code : CODE"
@@ -54,18 +65,34 @@ def p_code_empty(p):
     p[0] = ""
 
 def p_typeserror(p):
-    "types : REGEXP ERROR '(' elem ',' code ')' "
+    "types : ERROR '(' elem ',' code ')' "
     exp = construct_error_func(p)
     p.parser.string += exp
     
 def construct_error_func(p):
-    p[6] = p[6].replace('\n', '\n\t')
-    exp = f"def t_error(t):\n\tprint(f{p[4]})\n\t{p[6]}\n\n"
+    p[5] = p[5].replace('\n', '\n  ').replace('\t', '  ')
+    exp = f"def t_error(t):\n  print(f{p[3]})\n  {p[5]}\n\n"
     return exp
 
 def p_typesbuild(p):
     "types : ID '=' LBUILD "
     p.parser.string += p[1] + p[2] + p[3] + "\n"
+    
+def p_typesstates(p):
+    "types : STATES '=' '(' tupstates ')' "
+    p.parser.string += "states" + p[2] + "(" + p[4] + ")" + "\n"
+    
+def p_tups(p):
+    "tupstates : tupstates ',' tup"
+    p[0] = p[1] + p[2] + "\n  " + p[3]
+
+def p_tupsones(p):
+    "tupstates : tup"
+    p[0] = p[1] 
+    
+def p_tuplex(p):
+    "tup : '(' elem ',' STATESTYPES ')'"
+    p[0] = p[1] + p[2] + p[3] + p[4] + p[5]
     
 def check_if_present(p,str):
     tok = str[1:-1]
@@ -97,7 +124,7 @@ def p_elemFormat(p):
     p[0] = p[1]
 
 def p_yacc(p):
-    "yacc : BEGINY yaccdecs"
+    "yacc : BEGINY globals yaccdecs"
     
 def p_yaccdecs(p):
     "yaccdecs : yaccdecs yaccdec"
@@ -110,42 +137,47 @@ def p_yaccdec(p):
 
 def p_yacctype(p):
     "yacctype : PRECEDENCE '=' '[' tuples ']'"
-    p.parser.string += p[1] + p[2] + "(\n\t" + p[4] + "\n\t)\n"
+    p.parser.string += p[1] + p[2] + "(\n  " + p[4] + "\n  )\n"
 
 def p_yacctypecomment(p):
     "yacctype : COMMENT"
-
-
-def p_end(p):
-    "end : END"
-    p.parser.string += p[1]
     
-
-
-#TODO MAKE ATRIBS RECEIVE MORE THAT ELEM
-def p_yacctypeatribs(p):
-    "yacctype : ID '=' elem "
-    p.parser.string += p[1] + " = " + p[3][1:-1] + "\n" 
-    p.parser.atribs.append(p[1]) 
 
 def p_yacctypegrammar(p):
     "yacctype : ID ':' gramcontents code '-' ID"
     p.parser.string += construct_grammar_func(p)
 
+def p_end(p):
+    "end : END"
+    p.parser.string += p[1]
+
+def p_yaccglobals(p):
+    "globals : globals global"
+
+def p_yaccglobalsempty(p):
+    "globals : "
+    
+def p_yaccglobal(p):
+    "global : ID '=' elem "
+    p.parser.string += p[1] + " = " + p[3][1:-1] + "\n" 
+    p.parser.atribs.append(p[1]) 
+
+
 def construct_grammar_func(p):
     func_name = p[6]
-    str_globals = '\n\t'.join("global " + attr for attr in p.parser.atribs)
+    str_globals = '\n  '.join("global " + attr for attr in p.parser.atribs) 
+    code = p[4].replace('\t', '  ')
     exp = f'''
 def p_{func_name}(p):
-\t"{p[1]} : {p[3]}"
-\t{str_globals}
-\t{p[4]}\n
+  "{p[1]} : {p[3]}"
+  {str_globals}
+  {code}\n
 '''
     return exp
     
 def p_gramcontentsonly(p):
-    "gramcontents : gramcontent"
-    p[0] = p[1]
+    "gramcontents : "
+    p[0] = ""    
     
     
 def p_gramcontents(p):
@@ -164,7 +196,7 @@ def p_gramcontentw(p):
 
 def p_tuples(p):
     "tuples : tuples ',' tuple"
-    p[0] = p[1] + p[2] + "\n\t" + p[3]
+    p[0] = p[1] + p[2] + "\n  " + p[3]
 
 def p_tuplesone(p):
     "tuples : tuple"
@@ -200,7 +232,14 @@ def p_error(p):
 
 parser = yacc.yacc()
 
-f = open("test.txt","r", encoding='utf8')
+import sys
+
+if len(sys.argv) == 1 :
+    print("Nenhum ficheiro escolhido para compilar")
+else :
+    print("Compiling: ",sys.argv[1]) 
+
+f = open(sys.argv[1], "r", encoding ='utf8')
 
 parser.string = "import ply.yacc as yacc\nimport ply.lex as lex\n"
 parser.tokens = []
@@ -210,14 +249,13 @@ parser.atribs = []
 
 content = f.read()
 parser.parse(content)
-print(parser.tokens)
-print(parser.atribs)
+
 
 if parser.success:
-    print("Compilation successful!")
-    fout = open("out.py","w", encoding='utf8')
+    print("Compilation successful!")        
+    fout_name = "out.py" if len(sys.argv) == 2 else "" + sys.argv[2]
+    fout = open(fout_name, "w", encoding = 'utf8')
     fout.write(parser.string)
-    print(parser.string,end="")
 
 else:
     print("Compilation failed!")
